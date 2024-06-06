@@ -1,161 +1,72 @@
-/* global Phaser */
-
-// Copyright (c) 2020 Mr. Coxall All rights reserved
-//
-// Created by: Gabriel
-// Created on: Apr 2024
-// This file contains the JS functions for index.html
-
-/**
- * This class is Game Scene.
- */
-class GameScene extends Phaser.Scene {
-
-    // create an alien
-    createAlien () {
-      const alienXLocation = Math.floor(Math.random() * 1920) + 1
-      let alienXVelocity = Math.floor(Math.random() * 50) + 1
-      alienXVelocity *= Math.round(Math.random()) ? 1 : -1
-      const anAlien = this.physics.add.sprite(alienXLocation, -100, "alien")
-      anAlien.body.velocity.y = 200
-      anAlien.body.velocity.x = alienXVelocity
-      this.alienGroup.add(anAlien)
-    }
-  
-    constructor() {
-      super({ key: "gameScene" })
-      
-      this.background = null
-      this.ship = null
-      this.fireMissile = false
-      this.score = 0
-      this.scoreText = null
-      this.scoreTextStyle = { font: "65px Arial", fill: "#ffffff", align: "center"}
-  
-      this.gameOverText = null
-      this.gameOverTextStyle = { font: "65px Arial", fill: "#ff0000", align: "center"}
-    }
-  
-    /**
-     * Can be defined on your own Scenes.
-     * This method is called by the Scene Manager when the scene starts,
-     * before preload() and create().
-     * @param {object} data - Any data passed via ScenePlugin.add() or ScenePlugin.start()
-     */
-    init(data) {
-      this.cameras.main.setBackgroundColor("ffffff")
-    }
-  
-    /**
-     * Can be defined on your own Scenes.
-     * Use it to load assets.
-     */
-    preload() {
-      console.log("Game Scene")
-  
-      // images
-      this.load.image("starBackground", "./assets/starBackground.png")
-      this.load.image("ship", "./assets/spaceShip.png")
-      this.load.image("missile", "./assets/missile.png")
-      this.load.image("alien", "./assets/alien.png")
-      // sound
-      this.load.audio("laser", "./assets/laser1.wav")
-      this.load.audio("explosion", "./assets/barrelExploding.wav")
-      this.load.audio("bomb", "assets/bomb.wav")
-    }
-  
-    /**
-     * Can be defined on your own Scenes.
-     * Use it to create your game objects.
-     * @param {object} data - Any data passed via ScenePlugin.add() or ScenePlugin.start() 
-     */
-    create(data) {
-      this.background = this.add.image(0, 0, "starBackground").setScale(2.0)
-      this.background.setOrigin(0, 0)
-  
-      this.scoreText = this.add.text(10, 10, "Score: " + this.score.toString(), this.scoreTextStyle)
-      
-      this.ship = this.physics.add.sprite(1920 / 2, 1080 - 100, "ship")
-  
-        // create a group for the missiles
-        this.missileGroup = this.physics.add.group()
-  
-      // create a group for the aliens
-      this.alienGroup = this.add.group()
-      this.createAlien()
-  
-      // Collisions between missiles and aliens
-      this.physics.add.collider(this.missileGroup, this.alienGroup, function (missileCollide, alienCollide){
-        alienCollide.destroy()
-        missileCollide.destroy()
-        this.sound.play("explosion")
-        this.score = this.score + 1
-        this.scoreText.setText("Score: " + this.score.toString())
-        this.createAlien()
-        this.createAlien()
-      }.bind(this))
-  
-      // Collisions between ship and aliens
-      this.physics.add.collider(this.ship, this.alienGroup, function (shipCollide, alienCollide) {
-        this.sound.play("bomb")
-        this.physics.pause()
-        alienCollide.destroy()
-        shipCollide.destroy()
-        this.gameOverText = this.add.text(1920 / 2, 1080 / 2, "Game Over!\nClick to play again.", this.gameOverTextStyle).setOrigin(0.5)
-        this.gameOverText.setInteractive({ useHandCursor: true })
-        this.gameOverText.on("pointerdown", () => this.scene.start("gameScene"))
-      }.bind(this))
-    }
-  
-    /**
-     * Should be overridden by your own Scenes.
-     * This method is called once per game step while the scene is running.
-     * @param {number} time - The current time.
-     * @param {number} delta - The delta time in ms since the last frame.
-     */
-    update(time, delta) {
-      // called 60 times a second, hopefully!
-  
-      const keyLeftObj = this.input.keyboard.addKey("LEFT")
-      const keyRightObj = this.input.keyboard.addKey("RIGHT")
-      const keySpaceObj = this.input.keyboard.addKey("SPACE")
-  
-      if (keyLeftObj.isDown === true) {
-        this.ship.x -= 15
-        if (this.ship.x < 0) {
-          this.ship.x = 0
-        }
+// Create a new Phaser game configuration
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  physics: {
+      default: 'arcade',
+      arcade: {
+          gravity: { y: 300 }, // Set global gravity
+          debug: false
       }
-  
-      if (keyRightObj.isDown === true) {
-        this.ship.x += 15
-        if (this.ship.x > 1920) {
-          this.ship.x = 1920
-        }
-      }
-  
-      if (keySpaceObj.isDown === true) {
-        if (this.fireMissile === false) {
-          // fire missile
-          this.fireMissile = true
-          const aNewMissile = this.physics.add.sprite(this.ship.x, this.ship.y, "missile")
-          this.missileGroup.add(aNewMissile)
-          this.sound.play("laser")
-        }
-      }
-  
-      if (keySpaceObj.isUp === true){
-        this.fireMissile = false
-      }
-  
-      this.missileGroup.children.each(function (item) {
-        item.y = item.y - 15
-        if (item.y < 0) {
-          item.destroy()
-        }
-      })
-    }
+  },
+  scene: {
+      preload: preload,
+      create: create,
+      update: update
   }
+};
+
+// Create a new Phaser game
+const game = new Phaser.Game(config)
+
+function preload() {
+  // Load assets (e.g., a sprite image)
+  this.load.image('object', "./assets/ballObject.png")
+  this.load.image('conveyorBelt', './assets/conveyorBelt.png')
+}
+
+function create() {
+  // Create a group to hold all falling objects
+  this.fallingObjects = this.physics.add.group()
+
+  // Create the ground
+  const ground = this.add.rectangle(400, 580, 800, 40, 0x6666ff)
+  this.physics.add.existing(ground, true) // true means it's static
   
-  export default GameScene
+  // Create the conveyor belt
+  this.conveyorBelt = this.physics.add.sprite(400, 500, 'conveyorBelt')
+  this.conveyorBelt.setImmovable(true) // The conveyor belt doesn't move when hit
+  this.conveyorBelt.body.allowGravity = false // The conveyor belt is not affected by gravity
   
+  // Enable collision between the falling objects and the ground
+  this.physics.add.collider(this.fallingObjects, ground)
+  
+  // Enable collision between the falling objects and the conveyor belt
+  this.physics.add.collider(this.fallingObjects, this.conveyorBelt, onConveyorBelt, null, this)
+  
+  // Set up input handling for the space bar
+  this.input.keyboard.on('keydown-SPACE', createFallingObject, this)
+}
+
+function update() {
+  // Check if any falling objects have moved off screen
+  this.fallingObjects.children.iterate(function(fallingObject) {
+      if (fallingObject && fallingObject.x > config.width) {
+          fallingObject.destroy() // Remove the object when it moves out of the screen
+      }
+  });
+}
+
+function createFallingObject() {
+  // Create a new falling object at the top of the screen
+  const fallingObject = this.fallingObjects.create(400, 50, 'object')
+  
+  // Optional: Set the bounce value
+  fallingObject.setBounce(0.2)
+}
+
+function onConveyorBelt(fallingObject, conveyorBelt) {
+  // Apply horizontal velocity to the object when it hits the conveyor belt
+  fallingObject.setVelocityX(150) // Adjust the value to control the speed
+}
